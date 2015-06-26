@@ -53,7 +53,6 @@ def setFreeRegs(expr):
 		if "0"<=expr[i]<="9":
 			j=int(expr[i])
 			freeRegs=freeRegs[0:j]+"_"+freeRegs[j+1:len(freeRegs)]
-	print(freeRegs)
 
 def getFreeReg():
 	global freeRegs
@@ -63,63 +62,69 @@ def getFreeReg():
 			return str(i)
 	return "#"
 	
-def assingRegs(expr,i):
+def assingRegs(expr):
 	instr=""
-	if not("0"<=expr[i-2]<="9"):
+	if not("0"<=expr[0]<="9"):
 		freeReg=getFreeReg()
-		instr+="MOVE "+expr[i-2]+", D"+freeReg+"\n"
-		expr=expr[0:i-3]+freeReg+expr[i-1:len(expr)]
-	if not("0"<=expr[i-1]<="9"):
+		instr+="MOVE "+expr[0]+", D"+freeReg+"\n"
+		expr=freeReg+expr[1:len(expr)]
+	if not("0"<=expr[1]<="9"):
 		freeReg=getFreeReg()
-		instr+="MOVE "+expr[i-1]+", D"+freeReg+"\n"
-		expr=expr[0:i-2]+freeReg+expr[i:len(expr)]
+		instr+="MOVE "+expr[1]+", D"+freeReg+"\n"
+		expr=expr[0]+freeReg+expr[2]
 	return (instr,expr)
 		
 def getRegName(char):
 	return "D"+char
 
-def getAssemblyCmd(expr):
-	setFreeRegs(expr)
+def getAssemblyCmd(pfexpr):
+	if len(pfexpr)<3:
+		return ("","")
+	setFreeRegs(pfexpr)
 	instr=""
-	reg1=""
 	movInstr=""
-	for i in range(0,len(expr)):
-		if not("a"<=expr[i]<="z"):
-			(movInstr,expr)=assingRegs(expr,i)
-			instr+=movInstr
-			print (expr)
-			if expr[i]=="+":
-				reg1=getRegName(expr[i-2])
-				reg2=getRegName(expr[i-1])
-				instr+="ADD "+reg2+", "+reg1+"\n"
-			elif expr[i]=="-":
-				reg1=getRegName(expr[i-2])
-				reg2=getRegName(expr[i-1])
-				instr+="SUB "+reg2+", "+reg1+"\n"				
-			elif expr[i]=="*":
-				reg1=getRegName(expr[i-2])
-				reg2=getRegName(expr[i-1])
-				instr+="MUL "+reg2+", "+reg1+"\n"			
-			elif expr[i]=="/":
-				reg1=getRegName(expr[i-2])
-				reg2=getRegName(expr[i-1])
-				instr+="DIV "+reg2+", "+reg1+"\n"
-			else:
-				reg1=getRegName(expr[i-2])
-				reg2=getRegName(expr[i-1])
-				instr+="POT "+reg2+", "+reg1+"\n"
-			retVal=""+expr[0:i-2]+reg1+expr[i+1:len(expr)]
-			print(retVal)
-			return (instr,retVal)
-	return("",expr)
+	(head,expr,tail)=dismantleExpression(pfexpr)
+	(movInstr,expr)=assingRegs(expr)
+	instr+=movInstr
+	reg1=getRegName(expr[0])
+	reg2=getRegName(expr[1])
 	
+	if expr[2]=="+":
+		instr+="ADD "+reg2+", "+reg1+"\n"
+	elif expr[2]=="-":
+		instr+="SUB "+reg2+", "+reg1+"\n"				
+	elif expr[2]=="*":
+		instr+="MUL "+reg2+", "+reg1+"\n"			
+	elif expr[2]=="/":
+		instr+="DIV "+reg2+", "+reg1+"\n"
+	elif expr[2]=="^":
+		instr+="POT "+reg2+", "+reg1+"\n"
+	retVal=head+expr[0]+tail
+	return (instr,retVal)
+	
+def dismantleExpression(expr):
+	head=0
+	tail=0
+	headExpr=""
+	tailExpr=""
+	toSolve=""
+	for i in range(0,len(expr)):
+		if (not("a"<=expr[i]<="z") and not("0"<=expr[i]<="9")):
+				head=i-1
+				tail=i+1
+				break
+	if head>1:
+		headExpr=expr[0:head-1]
+	if tail<len(expr):
+		tailExpr=expr[tail:len(expr)]
+	toSolve=expr[head-1:tail]
+	return (headExpr,toSolve,tailExpr)
+
 expr=input("Ausdruck eingeben:")
 postFixExpr=toPostFix(expr)
 print(postFixExpr)
 instructions=""
-(aux,postFixExpr)=getAssemblyCmd(postFixExpr)
-instructions+=aux
-#while postFixExpr!="":
-	#(aux,postFixExpr)=getAssemblyCmd(postFixExpr)
-	#instructions+=aux
+while postFixExpr!="":
+	(aux,postFixExpr)=getAssemblyCmd(postFixExpr)
+	instructions+=aux
 print(instructions)
